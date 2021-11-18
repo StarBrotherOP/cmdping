@@ -4,6 +4,9 @@ using System.Net.NetworkInformation;
 using System.Net;
 using System.IO;
 using System.Net.Sockets;
+using System.Diagnostics;
+
+
 
 namespace Comping
 {
@@ -44,56 +47,90 @@ namespace Comping
 
 
         }
-        //【大力按我】本機外網測試按鈕
+        //本機外網測試按鈕
         private void button1_Click_1(object sender, EventArgs e)
 
         {
 
+
             //設定要測試連線的 IP 與 連線逾時。
 
-            System.Net.NetworkInformation.PingReply oPingReply = oPing.Send("8.8.8.8", 5000);
+            PingReply oPingReply = oPing.Send("8.8.8.8", 5000);
 
             //判斷是否連線。
-            if (oPingReply.Status == System.Net.NetworkInformation.IPStatus.Success)
+            if (oPingReply.Status == IPStatus.Success)
             {
                 MessageBox.Show("網路連線正常!");
             }
-            else if(oPingReply.Status != System.Net.NetworkInformation.IPStatus.Success)
-
+            else
             {
                 MessageBox.Show("網路連線異常!");
             }
+
         }
         //持續連線測試按鈕
         private void button2_Click(object sender, EventArgs e)
 
-
         {
-            System.Diagnostics.Process.Start(@"ping.exe", "8.8.8.8 -t");
-            Ping pi = new Ping();
-            var pp = pi.Send("8.8.8.8");
-            if (pp.Status == IPStatus.Success)
+            string command = "/C ping 8.8.8.8 -t > pinglog.txt";
+            Process.Start("cmd.exe", command);
+            
+            
+            
+            /*
+            // set file name
+            string filename = @"D:\pinglog.bat ";
+            using (StreamWriter writer = File.CreateText(filename))
             {
-                //creat text
-                string path = @"D:\\cmdpinglog.txt";
-                if (!File.Exists(path))
-                {
-                    // Create a file to write to.
-                    using (StreamWriter sw = File.CreateText(path))
-                    {
-                        for (int i = 1; i <= 1000; i++)
-                        {
-                            sw.WriteLine($"From{pp.Address}Byte = {pp.Buffer.Length}" +
-                                             $"Time={pp.RoundtripTime}ms TTL={pp.Options.Ttl}");
-                        }
-                        sw.Close();
-                    }
-                }
 
+                // write "ping" into the file
+                writer.WriteLine("@ECHO OFF\n:LOOPSTART\necho %time% >> ping.txt\nping 8.8.8.8 -n 10 >> ping.txt\nGOTO LOOPSTART");
+                writer.Close();
             }
             
+            //creat text
+            string path = @"D:\pinglog.bat";//save path
+            if (!File.Exists(path))
+            {
+                // Create a file to write to.
+                using (StreamWriter sw = File.CreateText(path))
+                {
+                    sw.WriteLine("@ECHO OFF\n:LOOPSTART\necho %time% >> ping.txt\nping 8.8.8.8 -n 10 >> ping.txt\nGOTO LOOPSTART");
+                    sw.Close();
+                }
+            }System.Diagnostics.Process.Start(@"ping.exe", "8.8.8.8 -t");
+        Ping pi = new Ping();
+        var pp = pi.Send("8.8.8.8");
+
+
+        //使用for mothod來一直紀錄log
+        if (pp.Status == IPStatus.Success)
+        {
+            //creat text
+            string path = @"C:\\Program Files\cmdpinglog.txt";//save path
+            if (!File.Exists(path))
+            {
+                // Create a file to write to.
+                using (StreamWriter sw = File.CreateText(path))
+                {
+
+                    sw.WriteLine($"From{pp.Address}Byte = {pp.Buffer.Length}" +
+                                     $"Time={pp.RoundtripTime}ms TTL={pp.Options.Ttl}");
+
+                    sw.Close();
+                }
+            }
+
+        }*/
+
+
+
         }
-        //顯示結果
+
+
+
+
+
         private void textBox1_TextChanged_1(object sender, EventArgs e)
         {
             
@@ -105,17 +142,64 @@ namespace Comping
 
 
         }
-
+        //查詢內網網IP
         private void button3_Click(object sender, EventArgs e)
         {
-            
-            IPAddress[] localIP = Dns.GetHostAddresses(Dns.GetHostName());
-            foreach (IPAddress address in localIP) {
+
+                    Process p = new Process();
+                    p.StartInfo.FileName = "ipconfig";
+                    p.StartInfo.UseShellExecute = false;
+                    p.StartInfo.Arguments = "/all";
+                    p.StartInfo.RedirectStandardOutput = true;
+                    p.Start();
+                    var ipconfigall = p.StandardOutput.ReadToEnd();
+                    MessageBox.Show(ipconfigall);
+
+                    IPAddress[] localIP = Dns.GetHostAddresses(Dns.GetHostName());
+
+            foreach (IPAddress address in localIP)
+            {
 
                 if (address.AddressFamily == AddressFamily.InterNetwork)
+                {
                     textBox1.Text = address.ToString();
+                }
             }
+            
+        }
 
+            
+            
+            
+
+        
+        //查詢外網網IP
+        private void button4_Click(object sender, EventArgs e)
+        {
+            
+                String address = "";
+                WebRequest request = WebRequest.Create("http://checkip.dyndns.org/");//use this url
+                using (WebResponse response = request.GetResponse())
+                using (StreamReader stream = new StreamReader(response.GetResponseStream()))
+                {
+                    address = stream.ReadToEnd();
+                }
+
+                int first = address.IndexOf("Address: ") + 9;
+                int last = address.LastIndexOf("</body>");
+                address = address.Substring(first, last - first);
+
+                textBox2.Text = address.ToString();
+            
+        }
+
+        private void textBox2_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void pictureBox1_Click(object sender, EventArgs e)
+        {
 
         }
     }
